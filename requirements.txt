@@ -1,0 +1,22 @@
+# -*- coding: utf-8 -*-
+
+pyyaml>=6.0
+
+requests>=2.31.0
+
+flask>=2.3.0
+
+wechatpy>=1.8.18
+
+cryptography>=41.0.0
+
+# 剪贴板识图本地 OCR（离线，支持中英文截图）
+rapidocr-onnxruntime>=1.3.0
+opencv-python-headless>=4.8.0
+
+# 客户问题 Excel 导入
+openpyxl>=3.1.0
+
+# wxauto4; python_version >= "3.9"
+
+# wxautox4; python_version >= "3.9"

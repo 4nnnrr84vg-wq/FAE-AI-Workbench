@@ -1,0 +1,253 @@
+# 关键词库：命中即秒回，无需等待 Cursor AI
+# 可自行增删条目；priority 越大越优先匹配
+
+entries:
+  - id: ble_conn_connected_flag
+    priority: 97
+    match: contains
+    keywords:
+      - "蓝牙联接成功是那个标志位"
+      - "蓝牙连接成功是那个标志位"
+      - "联接成功是那个标志位"
+      - "连接成功是那个标志位"
+      - "蓝牙联接成功"
+      - "蓝牙连接成功"
+      - "连接成功标志"
+      - "联接成功标志"
+      - "slave_connected"
+      - "master_connected"
+      - "GAPC_CONNECTION_REQ_IND"
+    reply: |
+      从机看 `app_env.slave_connected`：在 `ble_peripheral/app/src/app_task.c` 收到 `GAPC_CONNECTION_REQ_IND` 且 role 为 SLAVE 时置 true，断开在 `GAPC_DISCONNECT_IND` 清 false；主机对应 `app_env.master_connected`（`ble_central/app/src/app_task.c`），业务里直接判这两个 bool 即可。
+
+  - id: help_usage
+    priority: 100
+    keywords: ["帮助", "怎么用", "如何使用", "用法"]
+    reply: |
+      用法：微信选中消息 → Ctrl+Q 生成回复 → Ctrl+V 粘贴。
+      常见问题可先问关键词（浅睡、唤醒、ota、ble central 等），秒回。
+      复杂问题才走 AI（约 30~120 秒）。
+
+  - id: ble_periph_lightsleep_key
+    priority: 96
+    match: contains
+    keywords:
+      - "ble从机浅睡"
+      - "从机浅睡"
+      - "浅睡按键唤醒"
+      - "浅睡按键"
+      - "从机浅睡按键"
+      - "ble从机浅睡按键"
+      - "peripheral浅睡"
+      - "浅睡唤醒"
+      - "浅睡 唤醒"
+      - "按键浅睡"
+      - "浅睡 按键"
+      - "gpio浅睡"
+      - "lightsleep"
+    reply: |
+      BLE 从机浅睡+按键唤醒配置（从 pwr 移植）：
+
+      pwr.c Sleep_Demo()：
+      xc_pwr_gpio_lightsleep_wake_config(GPIO_3, RIS_EDGE_INT);
+      xc_pwr_gpio_lightsleep_wake_config(GPIO_2, FAIL_EDGE_INT);
+
+      移植到 ble_peripheral sleep.c：
+      - sleep_init() 末尾加上面两行
+      - 按键先 xc_gpio_init
+      - wake_it_src 含 GPIO_IRQn_WAKE
+      - SLEEP_ENABLE=1
+
+      注意：CONFIG_BT_WAKEUP_VIA_GPIO 不是按键方案。
+
+  - id: ble_periph_lightsleep_key_re
+    priority: 95
+    match: regex
+    keywords:
+      - "从机.{0,12}浅睡"
+      - "浅睡.{0,12}从机"
+      - "浅睡.{0,12}按键"
+      - "按键.{0,12}浅睡"
+      - "(?i)peripheral.{0,30}(light\\s*sleep|lightsleep|浅睡)"
+      - "(?i)(light\\s*sleep|lightsleep|浅睡).{0,30}peripheral"
+    reply: |
+      BLE 从机浅睡+按键唤醒配置（从 pwr 移植）：
+
+      pwr.c Sleep_Demo()：
+      xc_pwr_gpio_lightsleep_wake_config(GPIO_3, RIS_EDGE_INT);
+      xc_pwr_gpio_lightsleep_wake_config(GPIO_2, FAIL_EDGE_INT);
+
+      移植到 ble_peripheral sleep.c：
+      - sleep_init() 末尾加上面两行
+      - 按键先 xc_gpio_init
+      - wake_it_src 含 GPIO_IRQn_WAKE
+      - SLEEP_ENABLE=1
+
+      注意：CONFIG_BT_WAKEUP_VIA_GPIO 不是按键方案。
+
+  - id: io_wake_demo
+    priority: 90
+    keywords: ["io唤醒", "gpio唤醒", "带io唤醒", "唤醒demo", "唤醒的配置"]
+    reply: |
+      有 IO 唤醒 demo，推荐先看：
+      project/example/driver/pwr/app/src/pwr.c
+      - 浅睡 GPIO 唤醒：Sleep_Demo()，GPIO2/3，默认 SLEEP_DEMO=1
+      - 深睡 GPIO 唤醒：DeepSleep_Demo()，pwrkey + GPIO2/3，DEEPSLEEP_DEMO 改 1
+      工程：project/example/driver/pwr/mdk/peripheral.uvprojx
+      文档：doc_intra/driver_pwr.md
+
+  - id: lightsleep
+    priority: 72
+    keywords: ["pwr浅睡", "纯浅睡demo", "lightsleep demo", "driver pwr 浅睡"]
+    reply: |
+      纯驱动浅睡示例（无 BLE）：
+      project/example/driver/pwr/app/src/pwr.c → Sleep_Demo()
+      默认 SLEEP_DEMO=1，GPIO2/3 边沿唤醒。
+      工程：project/example/driver/pwr/mdk/peripheral.uvprojx
+      文档：doc_intra/driver_pwr.md
+
+      若要在 BLE 从机里浅睡+按键唤醒，请搜关键词「从机浅睡按键」。
+
+  - id: ble_periph_deepsleep_key
+    priority: 95
+    match: contains
+    keywords:
+      - "从机深睡"
+      - "ble从机深睡"
+      - "peripheral深睡"
+      - "深睡按键"
+      - "深睡唤醒"
+      - "power on 深睡"
+      - "POWER_ON"
+    reply: |
+      BLE 从机深睡按键唤醒配置（POWER_ON 方案）：
+
+      1. mdk 定义 POWER_ON=1
+      2. sleep.h：#define TOUCH_KEY GPIO_4
+      3. sleep.c 使用：
+         pwrkey_deepsleep_wake_config(TOUCH_KEY, DEEP_SLEEP_GPIO_WAKE_LOW_LEVEL)
+         cpu_enter_deepsleep()
+         power_on_check()
+
+      这是深睡掉电方案，不是浅睡。浅睡请搜「从机浅睡按键」。
+
+  - id: ble_periph_deepsleep_key_re
+    priority: 94
+    match: regex
+    keywords:
+      - "从机.{0,10}深睡"
+      - "深睡.{0,10}从机"
+      - "(?i)peripheral.{0,20}(deep.?sleep|深睡)"
+    reply: |
+      BLE 从机深睡 + 按键唤醒（POWER_ON 方案）具体配置：
+
+      mdk 定义 POWER_ON=1 → sleep.h 定义 TOUCH_KEY=GPIO_4 →
+      sleep.c 使用 pwrkey_deepsleep_wake_config(TOUCH_KEY, level) +
+      power_on_check() / cpu_enter_deepsleep()。
+
+      这是深睡掉电方案（非浅睡）。详见 ble_periph_deepsleep_key 条目。
+
+  - id: deepsleep
+    priority: 70
+    keywords: ["pwr深睡", "纯深睡demo", "deepsleep demo", "driver pwr 深睡"]
+    reply: |
+      纯驱动深睡示例（无 BLE）：
+      project/example/driver/pwr/app/src/pwr.c → DeepSleep_Demo()
+      设 DEEPSLEEP_DEMO=1，pwrkey + GPIO2/3 唤醒。
+      工程：project/example/driver/pwr/mdk/peripheral.uvprojx
+      文档：doc_intra/driver_pwr.md
+
+      BLE 从机深睡按键请搜「从机深睡」。
+
+  - id: flash_speed
+    priority: 92
+    match: contains
+    keywords:
+      - "flash操作速度"
+      - "flash速度"
+      - "flash 慢"
+      - "flash操作慢"
+      - "写flash慢"
+      - "flash写速度"
+    reply: |
+      Flash 操作慢的常見原因與優化：
+
+      1. 沒有開 FAST_SPI
+         - 正常 SPI 寫一頁 256B 要 40~55ms
+         - 開 FAST_SPI 後可降到 15~25ms
+
+      2. 建議檢查
+         - `xc_drv_fmc_spi.c` 是否有 `XC_FMC_FAST_SPI_FLASH_WRITE_PAGE`
+         - `USE_ROM_FLASH=1` 時要用 ROM 裡的 fast write 函式
+         - OTA 時每 4KB sector erase 也很慢
+
+      工程：project/example/ble/ble_peripheral/mdk/peripheral.uvprojx
+
+  - id: ble_central
+    priority: 80
+    keywords: ["ble central", "主机", "中心设备", "ble_central", "central demo"]
+    reply: |
+      BLE Central 工程：
+      project/example/ble/ble_central/mdk/peripheral.uvprojx
+      应用代码：app/src/app_task.c、usr_client.c
+
+  - id: ble_peripheral
+    priority: 78
+    keywords:
+      - "ble peripheral"
+      - "ble_periph"
+      - "ble_peripheral"
+      - "peripheral工程"
+      - "从机工程"
+      - "外设工程"
+      - "从机 demo"
+      - "peripheral demo"
+      - "广播工程"
+    reply: |
+      BLE Peripheral（从机）工程：
+      project/example/ble/ble_peripheral/mdk/peripheral.uvprojx
+      带库版本：project/example/ble/ble_peripheral_lib/mdk/peripheral.uvprojx
+
+      若问浅睡/按键唤醒配置，请说明「从机浅睡按键」，不要只问「从机」。
+
+  - id: ota
+    priority: 75
+    keywords: ["ota", "升级", "固件升级", "ge_ota"]
+    reply: |
+      OTA 相关脚本在 project/example/ble/ble_peripheral/mdk/output_tool/
+      例如 Double_ota/ge_ota.bat，第一行 @echo off 用于静默执行。
+      打包流程见 sdk_pack.bat。
+
+  - id: aotimer
+    priority: 70
+    keywords: ["aotimer", "ao timer", "always on timer", "常开定时器"]
+    reply: |
+      AO Timer 驱动：component/xc6xx_drivers/Drivers/xc_driver/xc_drv_aotimer.c
+      头文件：xc_drv_aotimer.h
+
+  - id: adc_mic
+    priority: 65
+    keywords: ["adc", "mic", "pga", "麦克风"]
+    reply: |
+      ADC + MIC PGA 示例：
+      project/example/driver/adc_mic_pga/app/src/pga_adc.c
+
+  - id: more_data
+    priority: 60
+    keywords: ["more_data", "more data", "MD位"]
+    reply: |
+      more_data 在 SDK 里有多处含义，需看上下文：
+      1) 扩展广播 Data Status 位
+      2) 连接层 MD（More Data）位
+      3) GATT 长读/分包时的 more data 标志
+      请说明是广播、连接还是 GATT 场景。
+
+  - id: local_fast_reply
+    priority: 50
+    keywords: ["太慢", "好慢", "加速", "秒回"]
+    reply: |
+      加速方法：
+      1) 常见问题直接问关键词（已内置关键词库）
+      2) 命中关键词库或本地资料时优先走本地检索
+      3) 把常用问答加到 keyword_library.yaml
+      4) 笔记放 reference/documents/ 供本地检索

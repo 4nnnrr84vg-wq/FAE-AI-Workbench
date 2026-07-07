@@ -1,0 +1,13 @@
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.7.0
+python-multipart>=0.0.9
+requests>=2.31.0
+sqlalchemy>=2.0.30
+psycopg[binary]>=3.1.19
+redis>=5.0.4
+qdrant-client>=1.9.1
+minio>=7.2.7
+pypdf>=4.2.0
+python-docx>=1.1.2
+openpyxl>=3.1.5

@@ -1,0 +1,105 @@
+name: fae-ai-workbench
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: fae_workbench
+      POSTGRES_USER: fae
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fae}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7.2-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  qdrant:
+    image: qdrant/qdrant:v1.10.1
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    environment:
+      APP_ENV: docker
+      CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      DATABASE_URL: postgresql+psycopg://fae:${POSTGRES_PASSWORD:-fae}@postgres:5432/fae_workbench
+      REDIS_URL: redis://redis:6379/0
+      QDRANT_URL: http://qdrant:6333
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-fae_knowledge_chunks}
+      RAG_ENABLED: ${RAG_ENABLED:-true}
+      RAG_AUTO_INDEX: ${RAG_AUTO_INDEX:-false}
+      MAX_INDEX_FILE_BYTES: ${MAX_INDEX_FILE_BYTES:-30000000}
+      EMBEDDING_MODE: ${EMBEDDING_MODE:-local}
+      EMBEDDING_VECTOR_SIZE: ${EMBEDDING_VECTOR_SIZE:-384}
+      EMBEDDING_API_BASE_URL: ${EMBEDDING_API_BASE_URL:-}
+      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
+      EMBEDDING_API_MODEL: ${EMBEDDING_API_MODEL:-text-embedding-3-small}
+      OBJECT_STORAGE_MODE: s3
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-minioadmin}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-minioadmin}
+      S3_BUCKET: ${S3_BUCKET:-fae-attachments}
+      KNOWLEDGE_ROOT: /workspace/reference/documents
+      FILE_LIBRARY_ROOT: /workspace/file_library
+      STORAGE_ROOT: /workspace/.web_mvp_storage
+      MODEL_API_BASE_URL: ${MODEL_API_BASE_URL:-https://api.deepseek.com/v1}
+      MODEL_API_KEY: ${MODEL_API_KEY:-${DEEPSEEK_API_KEY:-}}
+      MODEL_API_MODEL: ${MODEL_API_MODEL:-deepseek-chat}
+      MODEL_TIMEOUT_SEC: ${MODEL_TIMEOUT_SEC:-45}
+      GITLAB_BASE_URL: ${GITLAB_BASE_URL:-}
+      GITLAB_PROJECT: ${GITLAB_PROJECT:-}
+      GITLAB_TOKEN: ${GITLAB_TOKEN:-}
+      GITLAB_RELEASE_NOTE_PATHS: ${GITLAB_RELEASE_NOTE_PATHS:-ReleaseNotes.md,RELEASE_NOTES.md,CHANGELOG.md,CHANGELOG.txt,docs/ReleaseNotes.md,docs/release_notes.md}
+    depends_on:
+      - postgres
+      - redis
+      - qdrant
+      - minio
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./reference/documents:/workspace/reference/documents:ro
+      - ./file_library:/workspace/file_library:ro
+      - web_storage:/workspace/.web_mvp_storage
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:
+  redis_data:
+  qdrant_data:
+  minio_data:
+  web_storage:
