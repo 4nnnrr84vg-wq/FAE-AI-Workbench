@@ -133,23 +133,10 @@ docker compose up --build
 
 包含 PostgreSQL、Redis、Qdrant、MinIO、backend、frontend。当前 MVP 已使用 Qdrant 和对象存储；PostgreSQL/Redis 仍主要作为后续持久化和任务队列预留。
 
-## 打包给别人
-
-不要打包：
-
-- `.env`
-- `.env.web`
-- `.venv312`
-- `apps/frontend/node_modules`
-- `apps/frontend/.next`
-- `apps/frontend/.npm-cache`
-- `.web_mvp_storage`
-- `logs`
-
-对方需要安装：
+## 打包需要安装：
 
 - Python 3.12
 - Node.js 22.x
 - 自己的模型 API Key
 
-更多说明见 [docs/web_mvp.md](docs/web_mvp.md)。
+更多说明见
